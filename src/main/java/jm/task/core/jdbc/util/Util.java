@@ -6,7 +6,7 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 
 public class Util {
-    public final static String URL = "jdbc:mysql://localhost::3306/preproject_db";
+    public final static String URL = "jdbc:mysql://localhost:3306/preproject_db";
     public final static String USERNAME = "admin";
     public final static String PASSWORD = "admin1234@";
 
@@ -14,7 +14,7 @@ public class Util {
         Connection connection = null;
 
         try {
-            Driver driver = new com.mysql.jdbc.Driver();
+            Driver driver = new com.mysql.cj.jdbc.Driver();
             DriverManager.registerDriver(driver);
             connection = DriverManager.getConnection(URL, USERNAME, PASSWORD);
 
@@ -23,7 +23,7 @@ public class Util {
             }
 
         } catch (SQLException e) {
-            System.out.println("Can't load driver class!");
+            e.printStackTrace();
         }
 
         return connection;

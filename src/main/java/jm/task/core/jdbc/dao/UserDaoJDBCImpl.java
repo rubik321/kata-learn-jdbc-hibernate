@@ -2,16 +2,21 @@ package jm.task.core.jdbc.dao;
 
 import jm.task.core.jdbc.model.User;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.text.MessageFormat;
+import java.sql.*;
 import java.util.LinkedList;
 import java.util.List;
 
 public class UserDaoJDBCImpl implements UserDao {
-    private static final String table = "users";
+    public static final String CREATE_USERS_TABLE = "CREATE TABLE IF NOT EXISTS users (" +
+            "id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY," +
+            "name VARCHAR(16) NOT NULL," +
+            "lastName VARCHAR(32) NOT NULL," +
+            "age TINYINT UNSIGNED);";
+    public static final String DROP_USERS_TABLE = "DROP TABLE IF EXISTS users;";
+    public static final String SAVE_USER = "INSERT INTO users (name, lastName, age) VALUES (?, ?,  ?);";
+    public static final String REMOVE_USER = "DELETE FROM users WHERE id = ?";
+    public static final String GET_ALL_USERS = "SELECT * FROM users";
+    public static final String CLEAN_USERS_TABLE = "TRUNCATE TABLE users";
 
     private Connection connection;
 
@@ -24,29 +29,44 @@ public class UserDaoJDBCImpl implements UserDao {
     }
 
     public void createUsersTable() {
-        executeStatement("CREATE TABLE IF NOT EXISTS %s (".formatted(table) +
-                "id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY," +
-                "name VARCHAR(16) NOT NULL," +
-                "lastName VARCHAR(32) NOT NULL," +
-                "age TINYINT UNSIGNED);");
+        executeStatement(createStatement(), CREATE_USERS_TABLE);
     }
 
     public void dropUsersTable() {
-        executeStatement("DROP TABLE IF EXISTS %s;".formatted(table));
+        executeStatement(createStatement(), DROP_USERS_TABLE);
     }
 
     public void saveUser(String name, String lastName, byte age) {
-        executeStatement(
-                "INSERT INTO %s (name, lastName, age) VALUES ('%s', '%s', %d);".formatted(table, name, lastName, age));
+        PreparedStatement ps = getPreparedStatement(SAVE_USER);
+
+        try {
+            ps.setString(1, name);
+            ps.setString(2, lastName);
+            ps.setInt(3, age);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        executePreparedStatement(ps);
+        closePreparedStatement(ps);
     }
 
     public void removeUserById(long id) {
-        executeStatement("DELETE FROM %s WHERE id = %s;".formatted(table, id));
+        PreparedStatement ps = getPreparedStatement(REMOVE_USER);
+
+        try {
+            ps.setLong(1, id);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        executePreparedStatement(ps);
+        closePreparedStatement(ps);
     }
 
     public List<User> getAllUsers() {
         List<User> users = new LinkedList<>();
-        PreparedStatement ps = getPreparedStatement("SELECT * FROM %s".formatted(table));
+        PreparedStatement ps = getPreparedStatement(GET_ALL_USERS);
 
         try {
             ResultSet rs = ps.executeQuery();
@@ -70,13 +90,25 @@ public class UserDaoJDBCImpl implements UserDao {
     }
 
     public void cleanUsersTable() {
-        executeStatement("TRUNCATE TABLE %s".formatted(table));
+        executeStatement(createStatement(), CLEAN_USERS_TABLE);
     }
 
-    private void executeStatement(String sql) {
-        PreparedStatement ps = getPreparedStatement(sql);
-        executePreparedStatement(ps);
-        closePreparedStatement(ps);
+    private void executeStatement(Statement statement, String sql) {
+        try {
+            statement.execute(sql);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private Statement createStatement() {
+        Statement statement = null;
+        try {
+            statement = connection.createStatement();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return statement;
     }
 
     private PreparedStatement getPreparedStatement(String sql) {

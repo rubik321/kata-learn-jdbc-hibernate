@@ -7,6 +7,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 public class UserDaoJDBCImpl implements UserDao {
+     public static final String TABLE = "users";
     public static final String CREATE_USERS_TABLE = "CREATE TABLE IF NOT EXISTS users (" +
             "id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY," +
             "name VARCHAR(16) NOT NULL," +
@@ -29,48 +30,45 @@ public class UserDaoJDBCImpl implements UserDao {
     }
 
     public void createUsersTable() {
-        executeStatement(createStatement(), CREATE_USERS_TABLE);
+        try (PreparedStatement ps = connection.prepareStatement(CREATE_USERS_TABLE)) {
+            ps.execute();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
     public void dropUsersTable() {
-        executeStatement(createStatement(), DROP_USERS_TABLE);
+        try (PreparedStatement ps = connection.prepareStatement(DROP_USERS_TABLE)) {
+            ps.execute();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
     public void saveUser(String name, String lastName, byte age) {
-        PreparedStatement ps = getPreparedStatement(SAVE_USER);
-
-        try {
+        try (PreparedStatement ps = connection.prepareStatement(SAVE_USER)) {
             ps.setString(1, name);
             ps.setString(2, lastName);
             ps.setInt(3, age);
+            ps.execute();
         } catch (SQLException e) {
             e.printStackTrace();
         }
-
-        executePreparedStatement(ps);
-        closePreparedStatement(ps);
     }
 
     public void removeUserById(long id) {
-        PreparedStatement ps = getPreparedStatement(REMOVE_USER);
-
-        try {
+        try (PreparedStatement ps = connection.prepareStatement(REMOVE_USER)) {
             ps.setLong(1, id);
+            ps.execute();
         } catch (SQLException e) {
             e.printStackTrace();
         }
-
-        executePreparedStatement(ps);
-        closePreparedStatement(ps);
     }
 
     public List<User> getAllUsers() {
         List<User> users = new LinkedList<>();
-        PreparedStatement ps = getPreparedStatement(GET_ALL_USERS);
-
-        try {
+        try (PreparedStatement ps = connection.prepareStatement(GET_ALL_USERS)) {
             ResultSet rs = ps.executeQuery();
-
             while (rs.next()) {
                 User user = new User();
                 user.setId(rs.getLong("id"));
@@ -79,65 +77,17 @@ public class UserDaoJDBCImpl implements UserDao {
                 user.setAge(rs.getByte("age"));
                 users.add(user);
             }
-
         } catch (SQLException e) {
             e.printStackTrace();
-        } finally {
-            closePreparedStatement(ps);
         }
-
         return users;
     }
 
     public void cleanUsersTable() {
-        executeStatement(createStatement(), CLEAN_USERS_TABLE);
-    }
-
-    private void executeStatement(Statement statement, String sql) {
-        try {
-            statement.execute(sql);
+        try (PreparedStatement ps = connection.prepareStatement(CLEAN_USERS_TABLE)) {
+            ps.execute();
         } catch (SQLException e) {
             e.printStackTrace();
-        }
-    }
-
-    private Statement createStatement() {
-        Statement statement = null;
-        try {
-            statement = connection.createStatement();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return statement;
-    }
-
-    private PreparedStatement getPreparedStatement(String sql) {
-        PreparedStatement ps = null;
-
-        try {
-            ps = connection.prepareStatement(sql);
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-
-        return ps;
-    }
-
-    private void executePreparedStatement(PreparedStatement statement) {
-        try {
-            statement.execute();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void closePreparedStatement(PreparedStatement ps) {
-        if (ps != null) {
-            try {
-                ps.close();
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
         }
     }
 }

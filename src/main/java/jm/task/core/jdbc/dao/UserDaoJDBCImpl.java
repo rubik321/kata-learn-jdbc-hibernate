@@ -7,7 +7,6 @@ import java.util.LinkedList;
 import java.util.List;
 
 public class UserDaoJDBCImpl implements UserDao {
-     public static final String TABLE = "users";
     public static final String CREATE_USERS_TABLE = "CREATE TABLE IF NOT EXISTS users (" +
             "id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY," +
             "name VARCHAR(16) NOT NULL," +
